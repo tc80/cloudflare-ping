@@ -4,32 +4,46 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 const (
 	// Timeout constants based off the man page for 'ping'.
-	timeoutFlag    = "t"
-	timeoutHelp    = "Set the timeout in seconds for the program to exit, regardless of the number of packets sent/received. If unset, the program will behave normally."
+	timeoutFlag = "t"
+	timeoutHelp = "Set the timeout in seconds for the program to exit, regardless\n" +
+		"of the number of packets sent/received. If unset, the\n" +
+		"program will behave normally."
 	timeoutInvalid = "timeout must be greater than or equal to 0"
 )
+
+var (
+	// error for invalid timeout
+	errTimeoutInvalid = errors.New(timeoutInvalid)
+)
+
+// var (
+// 	// If the timeout is not set, the program will not timeout (anytime soon).
+// 	maxTimeout = time.Duration(math.MaxInt64)
+// )
 
 // Timeout is a wrapper around a boolean and unsigned integer
 // to use for command-line argument flag parsing.
 type Timeout struct {
 	IsSet bool
-	Value uint32
+	Value time.Duration
 }
 
 // Init initializes a Timeout instance.
 // It has an empty body since its zeroed fields
 // are sufficient.
-func (t *Timeout) Init() {
+func (*Timeout) Init() {
+	// t.Value = maxTimeout
 }
 
 // String is used to format Timeout's value and is required
 // to satisfy the flag.Value interface.
 func (t *Timeout) String() string {
-	return fmt.Sprint(*t)
+	return fmt.Sprintf("set=%v, value=%v", t.IsSet, t.Value)
 }
 
 // Set will initialize Timeout's value using a string, and is
@@ -40,10 +54,10 @@ func (t *Timeout) Set(val string) error {
 		return err
 	}
 	if res <= 0 {
-		return errors.New(timeoutInvalid)
+		return errTimeoutInvalid
 	}
 	t.IsSet = true
-	t.Value = uint32(res)
+	t.Value = time.Second * time.Duration(res)
 	return nil
 }
 
@@ -55,9 +69,4 @@ func (*Timeout) Flag() string {
 // Help gets the command-line help for Timeout.
 func (*Timeout) Help() string {
 	return timeoutHelp
-}
-
-// Uint32 gets the inner integer value Timeout wraps around.
-func (t *Timeout) Uint32() uint32 {
-	return t.Value
 }

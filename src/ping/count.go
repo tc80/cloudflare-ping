@@ -8,9 +8,15 @@ import (
 
 const (
 	// Count constants based off the man page for 'ping'.
-	countFlag    = "c"
-	countHelp    = "Set the number of ECHO_RESPONSE packets that are sent and received before stopping the program. If unset, the program will loop until interrupted."
+	countFlag = "c"
+	countHelp = "Set the number of echo packets that are sent and received\n" +
+		"before stopping the program. If unset, the program will loop until interrupted."
 	countInvalid = "count must be greater than 0"
+)
+
+var (
+	// error for invalid count
+	errCountInvalid = errors.New(countInvalid)
 )
 
 // Count is a wrapper around a boolean and unsigned integer
@@ -23,13 +29,13 @@ type Count struct {
 // Init initializes a Count instance.
 // It has an empty body since its zeroed fields
 // are sufficient.
-func (c *Count) Init() {
+func (*Count) Init() {
 }
 
 // String is used to format Count's value and is required
 // to satisfy the flag.Value interface.
 func (c *Count) String() string {
-	return fmt.Sprint(*c)
+	return fmt.Sprintf("set=%v, value=%v", c.IsSet, c.Value)
 }
 
 // Set will initialize Count's value using a string, and is
@@ -40,7 +46,7 @@ func (c *Count) Set(val string) error {
 		return err
 	}
 	if res <= 0 {
-		return errors.New(countInvalid)
+		return errCountInvalid
 	}
 	c.IsSet = true
 	c.Value = uint32(res)
@@ -55,9 +61,4 @@ func (*Count) Flag() string {
 // Help gets the command-line help for Count.
 func (*Count) Help() string {
 	return countHelp
-}
-
-// Uint32 gets the inner integer value Count wraps around.
-func (c *Count) Uint32() uint32 {
-	return c.Value
 }

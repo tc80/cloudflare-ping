@@ -10,10 +10,16 @@ import (
 
 const (
 	// TTL constants based off the man page for 'ping'.
-	ttlFlag    = "m"
-	ttlSysVar  = "net.inet.ip.ttl"
-	ttlHelp    = "Set the time to live (ttl) for outgoing packets as an integer. If unset, the default ttl is the system value sysctl " + ttlSysVar + "."
+	ttlFlag   = "m"
+	ttlSysVar = "net.inet.ip.ttl"
+	ttlHelp   = "Set the time to live (ttl) for outgoing packets as an integer.\n" +
+		"If unset, the default ttl is the system value sysctl " + ttlSysVar + "."
 	ttlInvalid = "time to live (ttl) must be greater than or equal to 0"
+)
+
+var (
+	// error for invalid ttl
+	errTTLInvalid = errors.New(ttlInvalid)
 )
 
 // TimeToLive is a wrapper around an unsigned integer
@@ -34,7 +40,7 @@ func (t *TimeToLive) Init() {
 // String is used to format TimeToLive's value and is required
 // to satisfy the flag.Value interface.
 func (t *TimeToLive) String() string {
-	return fmt.Sprint(*t)
+	return fmt.Sprintf("value=%v", *t)
 }
 
 // Set will initialize TimeToLive's value using a string, and is
@@ -45,7 +51,7 @@ func (t *TimeToLive) Set(val string) error {
 		return err
 	}
 	if res < 0 {
-		return errors.New(ttlInvalid)
+		return errTTLInvalid
 	}
 	*t = TimeToLive(res)
 	return nil
