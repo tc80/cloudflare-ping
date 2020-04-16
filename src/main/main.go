@@ -11,7 +11,7 @@ import (
 const (
 	hostArgIndex = 0
 	argCount     = 1
-	usageExample = "sudo go run main/main.go [-c count] [-f] [-i wait] [-m ttl] [-s packetsize] [-t timeout] host"
+	usageExample = "sudo go run main/main.go [-W waittime] [-c count] [-f] [-i wait] [-m ttl] [-s packetsize] [-t timeout] host"
 )
 
 // flagArg interface allows us to process the command-line
@@ -61,6 +61,7 @@ func parse() *ping.Ping {
 		&p.PacketSize,
 		&p.Flood,
 		&p.Wait,
+		&p.WaitTime,
 	}
 	// parse each flag, each implements flag.Value
 	for _, f := range flags {

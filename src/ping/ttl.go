@@ -66,8 +66,3 @@ func (*TimeToLive) Flag() string {
 func (*TimeToLive) Help() string {
 	return ttlHelp
 }
-
-// Uint32 gets the inner integer value TimeToLive wraps around.
-func (t *TimeToLive) Uint32() uint32 {
-	return uint32(*t)
-}

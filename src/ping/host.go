@@ -7,12 +7,15 @@ import (
 
 const (
 	// constants for resolving addresses as ipv4, ipv6
-	ipv4Network = "ip4"
-	ipv6Network = "ip6"
-	// ipv4ICMPNetwork = "ip4:icmp"
-	ipv4ICMPNetwork = "ip4:icmp"
-	ipv6ICMPNetwork = "ip6:ipv6-icmp"
-	hostInvalid     = "invalid IPv4 or IPv6 address"
+	ipv4Network          = "ip4"
+	ipv6Network          = "ip6"
+	ipv4ICMPNetwork      = "ip4:icmp"
+	ipv6ICMPNetwork      = "ip6:ipv6-icmp"
+	ipv4BindAddress      = "0.0.0.0" // capture all ipv4 addresses
+	ipv6BindAddress      = "::"      // capture all ipv6 addresses
+	hostInvalid          = "invalid IPv4 or IPv6 address"
+	ianaProtocolIPv4ICMP = 1
+	ianaProtocolIPv6ICMP = 58
 )
 
 var (
