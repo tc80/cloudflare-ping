@@ -33,9 +33,11 @@ func ResolveHost(host string) (*net.IPAddr, bool, error) {
 	if err == nil {
 		return ipAddr, true, nil
 	}
+	// try to resolve as IPv6
 	ipAddr, err = net.ResolveIPAddr(ipv6Network, host)
 	if err == nil {
 		return ipAddr, false, nil
 	}
+	// failed to resolve
 	return ipAddr, false, errHostInvalid
 }

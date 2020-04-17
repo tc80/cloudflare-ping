@@ -21,12 +21,7 @@ var (
 	errTimeoutInvalid = errors.New(timeoutInvalid)
 )
 
-// var (
-// 	// If the timeout is not set, the program will not timeout (anytime soon).
-// 	maxTimeout = time.Duration(math.MaxInt64)
-// )
-
-// Timeout is a wrapper around a boolean and unsigned integer
+// Timeout is a wrapper around a boolean and a time.Duration
 // to use for command-line argument flag parsing.
 type Timeout struct {
 	IsSet bool
@@ -37,7 +32,6 @@ type Timeout struct {
 // It has an empty body since its zeroed fields
 // are sufficient.
 func (*Timeout) Init() {
-	// t.Value = maxTimeout
 }
 
 // String is used to format Timeout's value and is required
@@ -53,7 +47,7 @@ func (t *Timeout) Set(val string) error {
 	if err != nil {
 		return err
 	}
-	if res <= 0 {
+	if res < 0 {
 		return errTimeoutInvalid
 	}
 	t.IsSet = true

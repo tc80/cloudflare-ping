@@ -24,12 +24,11 @@ type flagArg interface {
 	Help() string     // gets help message
 }
 
-// print usage to stderr and quit
+// print usage to stderr
 func usage() {
 	fmt.Fprintf(os.Stderr, "\nUsage: %v\n\n", usageExample)
 	flag.PrintDefaults()    // print flag defaults
 	fmt.Fprintln(os.Stderr) // space for readability
-	os.Exit(1)              // exit program
 }
 
 // main method
@@ -38,7 +37,8 @@ func main() {
 	err := p.Validate() // check if valid
 	if err != nil {
 		fmt.Printf("Failed to ping: %v\n", err)
-		usage()
+		usage()    // print usage
+		os.Exit(1) // exit program
 	}
 	err = p.Start() // start pinging
 	if err != nil {
@@ -70,6 +70,7 @@ func parse() *ping.Ping {
 	if len(args) != argCount {
 		// invalid number or order of arguments
 		usage()
+		os.Exit(1)
 	}
 	p.HostName = args[hostArgIndex]
 	// return pointer to ping.Ping

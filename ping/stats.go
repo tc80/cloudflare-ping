@@ -29,7 +29,7 @@ func (p *Ping) printStats() {
 	transmitted := len(p.sent) // number of packets sent
 	if transmitted == 0 {
 		fmt.Println("<no packets sent>")
-		return
+		return // no packets, so no stats to show (avoid division by 0 too)
 	}
 	var received, exceeded int                  // number of packets recv, wait time exceeded
 	var min, sum, max, avg, stDev time.Duration // rtt stats
@@ -51,6 +51,7 @@ func (p *Ping) printStats() {
 		}
 		sum += rtt // increment sum
 	}
+	// calculate average rtt
 	avg = time.Duration(sum.Nanoseconds() / int64(transmitted))
 	// used for calculating stdev
 	var sumSquaredDiff float64
@@ -64,7 +65,7 @@ func (p *Ping) printStats() {
 	fmt.Printf("%v packets transmitted, %v packets received, %.1f%% packet loss",
 		transmitted, received, packetLoss)
 	if exceeded > 0 {
-		fmt.Printf(", %v packets out of wait time", exceeded)
+		fmt.Printf(", %v packets out of wait time", exceeded) // only print exceeded packets if > 0
 	}
 	fmt.Printf("\nround-trip min/avg/max/stddev = %v/%v/%v/%v\n", min, avg, max, stDev)
 }

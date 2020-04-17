@@ -16,7 +16,7 @@ var (
 
 // sends an ICMP "echo request" to a host for a particular
 // sequence using the Ping request
-func (p *Ping) receiver(done <-chan bool, fatal chan<- error) {
+func (p *Ping) receiver(done <-chan bool, errors chan<- error) {
 	defer p.waitGroup.Done()
 	for {
 		select {
@@ -30,7 +30,7 @@ func (p *Ping) receiver(done <-chan bool, fatal chan<- error) {
 				continue // timed out, try to read again
 			}
 			if err != nil {
-				fatal <- fmt.Errorf("failed to read: %v", err)
+				go func() { errors <- fmt.Errorf("failed to read: %v", err) }()
 				return
 			}
 			// handle reply

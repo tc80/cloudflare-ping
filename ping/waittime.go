@@ -23,7 +23,7 @@ var (
 	errWaitTimeInvalid = errors.New(waitTimeInvalid)
 )
 
-// WaitTime is a wrapper around an unsigned integer
+// WaitTime is a wrapper around a time.Duration
 // to use for command-line argument flag parsing.
 type WaitTime time.Duration
 

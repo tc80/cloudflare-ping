@@ -16,7 +16,7 @@ const (
 		"This flag (-i) is incompatible with flood (-f)."
 	waitInvalid      = "count must be greater than or equal to 0"
 	waitDefault      = time.Second
-	waitInputBitSize = 64 // float64 accepted as input
+	waitInputBitSize = 64 // float64 accepted as input, so need 64 bits
 )
 
 var (
@@ -24,7 +24,7 @@ var (
 	errWaitInvalid = errors.New(waitInvalid)
 )
 
-// Wait is a wrapper around a boolean and unsigned integer
+// Wait is a wrapper around a boolean and a time.Duration
 // to use for command-line argument flag parsing.
 type Wait struct {
 	IsSet bool

@@ -40,7 +40,10 @@ type Ping struct {
 // Validate checks if the Ping request is valid,
 // returning a non-nil error if invalid.
 // Should be called before calling Start().
-// Requirements: Count > 0, Host must be valid IPv4 or IPv6 address
+// Requirements:
+// 		Count > 0
+//		Host must be valid IPv4 or IPv6 address
+//		Cannot have both wait flag (-i) and flood flag (-f) at a time
 func (p *Ping) Validate() error {
 	if p.Count.IsSet && p.Count.Value == 0 {
 		return errCountInvalid

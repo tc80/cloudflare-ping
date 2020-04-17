@@ -19,7 +19,7 @@ func (p *Ping) sender(done <-chan bool, errors chan<- error) {
 			// send sequence i
 			err := p.send(i)
 			if err != nil {
-				errors <- err
+				go func() { errors <- err }()
 				return
 			}
 			<-time.After(time.Duration(p.Wait.Value)) // wait after sending
@@ -44,7 +44,7 @@ func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
 			for j := 0; j < floodTimesPerSecond && (!p.Count.IsSet || i < int(p.Count.Value)); i, j = i+1, j+1 {
 				err := p.send(i)
 				if err != nil {
-					errors <- err
+					go func() { errors <- err }()
 					return
 				}
 			}
@@ -62,7 +62,7 @@ func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
 					// packet received, so send a request
 					err := p.send(i)
 					if err != nil {
-						errors <- err
+						go func() { errors <- err }()
 						return
 					}
 					i++
