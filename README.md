@@ -28,7 +28,7 @@ It was developed with Go version 1.13.5 and macOS Catalina 10.15.4.
 
 ## Build
 
-To build, use the [**`Makefile`**][Makefile] provided.
+To build, use the `Makefile` provided.
 
 Simply run `make` to build and `make clean` to remove the executable.
 
