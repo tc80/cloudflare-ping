@@ -16,7 +16,7 @@ var (
 
 // sends an ICMP "echo request" to a host for a particular
 // sequence using the Ping request
-func (p *Ping) receiver(done <-chan bool, fatal chan<- error) {
+func (p *Ping) receiver(done <-chan bool, fatal chan<- error, flood chan<- bool) {
 	defer p.waitGroup.Done()
 	for {
 		select {
@@ -37,6 +37,9 @@ func (p *Ping) receiver(done <-chan bool, fatal chan<- error) {
 			recvTime := time.Now()
 			p.waitGroup.Add(1)
 			go p.handleReply(buffer[:n], recvTime)
+			if bool(p.Flood) {
+				go func() { flood <- true }() // send recv to flood
+			}
 		}
 	}
 }
@@ -111,15 +114,21 @@ func (p *Ping) handleReply(reply []byte, recvTime time.Time) {
 // handles an IPv4 or IPv6 echo host time exceeded reply
 // header interface argument is either
 // a non-nil *ipv4.Header or non-nil *ipv6.Header
+// for now, there is no validation to check
+// for associated sequence / if we sent a request
 func (p *Ping) handleEchoTimeExceeded(reply []byte, recvTime time.Time, header interface{}, body *icmp.TimeExceeded) {
-	fmt.Println("failed1")
+	fmt.Printf("%v bytes from %v: Time to live exceeded\n%v\n",
+		len(reply), p.hostAddr.String(), header)
 }
 
 // handles an IPv4 or IPv6 echo host unreachable reply
 // header interface argument is either
 // a non-nil *ipv4.Header or non-nil *ipv6.Header
+// for now, there is no validation to check
+// for associated sequence / if we sent a request
 func (p *Ping) handleEchoDstUnreachable(reply []byte, recvTime time.Time, header interface{}, body *icmp.DstUnreach) {
-	fmt.Println("failed")
+	fmt.Printf("%v bytes from %v: Destination unreachable\n%v\n",
+		len(reply), p.hostAddr.String(), header)
 }
 
 // handles an IPv4 or IPv6 echo reply, where the
@@ -144,6 +153,7 @@ func (p *Ping) handleEchoReply(reply []byte, recvTime time.Time, header interfac
 			packet.receivedTTL = header.(*ipv6.Header).HopLimit
 		}
 		// only print if wait time not exceeded
+		// note: currently not checking integrity of payload
 		if !packet.waitTimeExceeded {
 			fmt.Printf("%v bytes from %v: icmp_seq=%v ttl=%v time=%v\n",
 				len(reply), p.hostAddr.String(), body.Seq, packet.receivedTTL, packet.roundtripTime)

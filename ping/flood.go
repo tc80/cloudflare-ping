@@ -12,6 +12,7 @@ const (
 		"they are received or 100 times per second, whichever is more.\n" +
 		"If unset, the program will behave normally. This flag (-f)\n" +
 		"is incompatible with wait (-i)."
+	floodTimesPerSecond = 100
 )
 
 // Flood is a wrapper around a boolean

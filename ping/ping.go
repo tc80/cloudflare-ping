@@ -112,6 +112,8 @@ func (p *Ping) Start() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize ping: %v", err)
 	}
+	// print stats if program interrupted
+	createInterruptHandler(p)
 	fmt.Printf("PING %v (%v): %v data bytes\n", p.HostName, p.hostAddr.String(), p.PacketSize)
 	// make channel for timeout
 	timeout := make(chan bool)
@@ -122,30 +124,44 @@ func (p *Ping) Start() error {
 			timeout <- true               // notify timeout
 		}()
 	}
-	// make channels for done, errors
+	// make channels for done, errors, flood
 	// done will notify threads to clean up and stop
 	// errors will be used to pass errors from threads
+	// flood will be used to notify the sender that a package
+	// is received if flood mode is sets
 	done := make(chan bool)
 	errors := make(chan error)
+	flood := make(chan bool)
 	defer close(errors)
 	defer close(done)
+	defer close(flood)
 	p.waitGroup.Add(1)
 	// start receiving
-	go p.receiver(done, errors)
+	go p.receiver(done, errors, flood)
 	p.waitGroup.Add(1)
 	// start sending
 	if bool(p.Flood) {
-		go p.floodSender(done, errors)
+		go p.floodSender(done, errors, flood)
 	} else {
 		go p.sender(done, errors)
 	}
+	// clean up function that notifies sender/receiver to stop
+	cleanUp := func() {
+		done <- true
+		done <- true
+	}
+	err = nil
+	// wait for an error to occur or a timeout
+	// note: an error can be nil, indicating a successful
+	// sender termination if we are sending finite packets
 	select {
 	case <-timeout:
-		// timed out, so do something
-		fmt.Println("timed out")
-	case err := <-errors:
-		panic(err)
+		go cleanUp()
+	case err = <-errors:
 	}
+	// wait for all threads to clean up
 	p.waitGroup.Wait()
-	return nil
+	// print stats
+	p.printStats()
+	return err
 }

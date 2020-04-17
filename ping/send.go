@@ -30,7 +30,9 @@ func (p *Ping) sender(done <-chan bool, errors chan<- error) {
 
 // sends an ICMP "echo request" in flood mode to a host for a particular
 // sequence using the Ping request
-func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
+// flood mode: send 100 requests/second or as fast as they are received,
+// whichever is more
+func (p *Ping) floodSender(done <-chan bool, errors chan<- error, recv <-chan bool) {
 	defer p.waitGroup.Done()
 	// keep sending forever unless count is set
 	for i := 0; !p.Count.IsSet || i < int(p.Count.Value); i++ {
@@ -38,13 +40,28 @@ func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
 		case <-done:
 			return // stop sending
 		default:
-			// send sequence i
-			err := p.send(i)
-			if err != nil {
-				errors <- err
-				return
+			endTime := time.Now().Add(time.Second)
+			// send 100 requests
+			for j := 0; j < floodTimesPerSecond && i < int(p.Count.Value); i, j = i+1, j+1 {
+				err := p.send(i)
+				if err != nil {
+					errors <- err
+					return
+				}
 			}
-			<-time.After(time.Duration(p.Wait.Value))
+			for time.Now().Before(endTime) {
+				select {
+				case <-recv: // see if we can receive a packet
+					// send a request for each received packet
+					err := p.send(i)
+					if err != nil {
+						errors <- err
+						return
+					}
+				default:
+					// keep looping
+				}
+			}
 		}
 	}
 }
