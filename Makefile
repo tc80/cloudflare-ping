@@ -27,7 +27,7 @@ ping-cloudflare-quickly:
 
 # ping cloudflare 10 times with a 15ms wait time
 ping-cloudflare-waittime:
-	sudo ./main/ping -c 10 -W 15
+	sudo ./main/ping -c 10 -W 15 cloudflare.com
 
 # flood google for 1 second
 ping-google-flood:
@@ -39,7 +39,7 @@ ping-google-large-packet:
 
 # ping google and always exceed ttl
 ping-google-exceed-ttl:
-	sudo ./main/ping -m 0 google.com
+	sudo ./main/ping -c 5 -m 0 google.com
 
 # ping localhost
 ping-localhost:

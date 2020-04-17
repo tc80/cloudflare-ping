@@ -155,9 +155,9 @@ func (p *Ping) Start() error {
 	// sender termination if we are sending finite packets
 	select {
 	case <-timeout:
-		go cleanUp()
 	case err = <-errors:
 	}
+	go cleanUp()
 	// wait for all threads to clean up
 	p.waitGroup.Wait()
 	// print stats

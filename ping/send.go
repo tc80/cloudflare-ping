@@ -25,6 +25,7 @@ func (p *Ping) sender(done <-chan bool, errors chan<- error) {
 			<-time.After(time.Duration(p.Wait.Value)) // wait after sending
 		}
 	}
+	go func() { errors <- nil }() // finished successfully
 }
 
 // sends an ICMP "echo request" in flood mode to a host for a particular
@@ -73,6 +74,7 @@ func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
 			p.floodRecvMux.Unlock()
 		}
 	}
+	go func() { errors <- nil }() // finished successfully
 }
 
 // sends an ICMP "echo request" to a host for a particular
