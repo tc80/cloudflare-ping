@@ -40,6 +40,10 @@ The usage will be printed in the case of any errors. For instance, the flags `-i
 
 Make sure that this repository is located in your computer's `GOPATH` in the top-level `src` directory. Otherwise, you may need to modify the import statements for the program to build. 
 
+## Tests
+
+There are several tests/examples of running the application in the `Makefile`. For example: `make run ping-google-dns-ipv6` pings Google's IPv6 DNS five times and outputs the statistics. Remember to build before running.
+
 ## Note
 
 This application is strongly built off of the ping man page with respect to command-line flags and output statements for packets and statistics.
@@ -50,9 +54,6 @@ To make the flood implementation slightly easier, it was altered from the ping m
 
 Finally, when testing with IPv6 addresses, make sure IPv6 is enabled on your router.
 
-## Tests
-
-There are several tests/examples of running the application in the `Makefile`. For example: `make run ping-google-dns-ipv6` pings Google's IPv6 DNS 5 times and outputs the statistics. Remember to build before running.
 
 
 

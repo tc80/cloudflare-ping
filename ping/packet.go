@@ -16,7 +16,9 @@ const (
 	packetSizeFlag       = "s"
 	packetSizeHelp       = "Set the number of data bytes sent. If unset, 56 bytes\n" +
 		"will be sent, which becomes 64 ICMP data bytes when included\n" +
-		"with the ICMP header data (8 bytes)."
+		"with the ICMP header data (8 bytes). Note that due to the Go\n" +
+		"ipv4/ipv6 library, small packet sizes may not work. For example,\n" +
+		"the minimum header size in the ipv4 library is 20."
 	packetSizeInvalid  = "packet size must be greater than or equal to 0"
 	packetSizeTooLarge = "packet size too large"
 )

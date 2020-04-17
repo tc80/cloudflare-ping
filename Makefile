@@ -25,15 +25,35 @@ ping-cloudflare-forever:
 ping-cloudflare-quickly:
 	sudo ./main/ping -i 0.01 -t 2 cloudflare.com
 
+# ping cloudflare 10 times with a 15ms wait time
+ping-cloudflare-waittime:
+	sudo ./main/ping -c 10 -W 15
+
 # flood google for 1 second
 ping-google-flood:
 	sudo ./main/ping -t 1 -f google.com
 
 # ping google with a large packet size
 ping-google-large-packet:
-	sudo ./main/ping -c 5 -s 1000 google.com
+	sudo ./main/ping -c 5 -s 300 google.com
 
-# add some more tests
+# ping google and always exceed ttl
+ping-google-exceed-ttl:
+	sudo ./main/ping -m 0 google.com
+
+# ping localhost
+ping-localhost:
+	sudo ./main/ping localhost
+
+# ping localhost with a bunch of options
+# 	wait time = 1 ms
+#	count = 1000 requests
+# 	flood option = true
+#	ttl = 0
+#	packet size = 80 bytes
+#	timeout = 2s
+ping-localhost-combo:
+	sudo ./main/ping -W 1 -c 1000 -f -m 0 -s 80 -t 2 localhost
 
 # cleans the executable
 clean: 
