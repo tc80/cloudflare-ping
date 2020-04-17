@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
@@ -112,28 +113,39 @@ func (p *Ping) Start() error {
 		return fmt.Errorf("failed to initialize ping: %v", err)
 	}
 	fmt.Printf("PING %v (%v): %v data bytes\n", p.HostName, p.hostAddr.String(), p.PacketSize)
-	errs := make(chan error)
+	// make channel for timeout
+	timeout := make(chan bool)
+	defer close(timeout)
+	if p.Timeout.IsSet {
+		go func() {
+			<-time.After(p.Timeout.Value) // wait
+			timeout <- true               // notify timeout
+		}()
+	}
+	// make channels for done, errors
+	// done will notify threads to clean up and stop
+	// errors will be used to pass errors from threads
 	done := make(chan bool)
+	errors := make(chan error)
+	defer close(errors)
+	defer close(done)
 	p.waitGroup.Add(1)
+	// start receiving
+	go p.receiver(done, errors)
 	p.waitGroup.Add(1)
-	go p.sender(done, errs)
-	go p.receiver(done, errs)
-	// printing same message as 'ping' command on start
-	// p.send(0)
-	// <-time.After(time.Second)
-	// p.send(1)
-	// <-time.After(time.Second)
-	// p.send(2)
-
+	// start sending
+	if bool(p.Flood) {
+		go p.floodSender(done, errors)
+	} else {
+		go p.sender(done, errors)
+	}
+	select {
+	case <-timeout:
+		// timed out, so do something
+		fmt.Println("timed out")
+	case err := <-errors:
+		panic(err)
+	}
 	p.waitGroup.Wait()
-	// errors := make(chan error) // channel for receiving errors
-	// // gracefully kill ping
-	// select {
-	// case _ = <-errors:
-	// 	break
-	// case <-time.After(p.Timeout.Value):
-	// 	fmt.Printf("Timed out!, so print the stats")
-	// }
-	// fmt.Printf("received: %v\n", p)
 	return nil
 }

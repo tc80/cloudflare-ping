@@ -41,7 +41,7 @@ func (p *Ping) receiver(done <-chan bool, fatal chan<- error) {
 	}
 }
 
-// handles the reply
+// handles the reply depending on its type
 func (p *Ping) handleReply(reply []byte, recvTime time.Time) {
 	defer p.waitGroup.Done()
 	// attempt to parse message

@@ -9,20 +9,43 @@ import (
 
 // sends an ICMP "echo request" to a host for a particular
 // sequence using the Ping request
-func (p *Ping) sender(done <-chan bool, fatal chan<- error) {
+func (p *Ping) sender(done <-chan bool, errors chan<- error) {
 	defer p.waitGroup.Done()
 	// keep sending forever unless count is set
 	for i := 0; !p.Count.IsSet || i < int(p.Count.Value); i++ {
 		select {
+		case <-done:
+			return // stop sending
 		default:
+			// send sequence i
 			err := p.send(i)
 			if err != nil {
-				fatal <- err
+				errors <- err
 				return
 			}
 			<-time.After(time.Duration(p.Wait.Value))
 		}
-		fmt.Println(i)
+	}
+}
+
+// sends an ICMP "echo request" in flood mode to a host for a particular
+// sequence using the Ping request
+func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
+	defer p.waitGroup.Done()
+	// keep sending forever unless count is set
+	for i := 0; !p.Count.IsSet || i < int(p.Count.Value); i++ {
+		select {
+		case <-done:
+			return // stop sending
+		default:
+			// send sequence i
+			err := p.send(i)
+			if err != nil {
+				errors <- err
+				return
+			}
+			<-time.After(time.Duration(p.Wait.Value))
+		}
 	}
 }
 
@@ -61,7 +84,7 @@ func (p *Ping) send(seq int) error {
 		p.sentMux.Lock()
 		packet := p.sent[seq]
 		if !packet.received {
-			fmt.Printf("time limit exceeded for %v\n", seq)
+			// has not been seen yet, so it is late
 			packet.waitTimeExceeded = true
 		}
 		p.sentMux.Unlock()
