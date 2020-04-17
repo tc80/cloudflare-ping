@@ -10,10 +10,11 @@ import (
 
 const (
 	// PacketSize constants based off the man page for 'ping'.
-	packetSizeDefault = 56
-	packetSizeMax     = 65507
-	packetSizeFlag    = "s"
-	packetSizeHelp    = "Set the number of data bytes sent. If unset, 56 bytes\n" +
+	packetSizeDefault    = 56
+	packetPayloadSizeMax = 65507 // max payload size
+	icmpPacketMaxSize    = 65535 // includes headers
+	packetSizeFlag       = "s"
+	packetSizeHelp       = "Set the number of data bytes sent. If unset, 56 bytes\n" +
 		"will be sent, which becomes 64 ICMP data bytes when included\n" +
 		"with the ICMP header data (8 bytes)."
 	packetSizeInvalid  = "packet size must be greater than or equal to 0"
@@ -24,6 +25,15 @@ var (
 	// error for invalid packet size
 	errPacketSizeInvalid = errors.New(packetSizeInvalid)
 )
+
+// represents a sent ICMP packet
+type icmpPacket struct {
+	sendTime         time.Time // time sent
+	receiveTime      time.Time // time received
+	received         bool      // if the packet has been received
+	waitTimeExceeded bool      // if the packet exceeded its wait time
+	payload          []byte    // payload
+}
 
 // PacketSize is a wrapper around an unsigned integer
 // to use for command-line argument flag parsing.
@@ -52,8 +62,8 @@ func (p *PacketSize) Set(val string) error {
 	if res < 0 {
 		return errPacketSizeInvalid
 	}
-	if res > packetSizeMax {
-		return fmt.Errorf("%v: %v > %v", packetSizeTooLarge, res, packetSizeMax)
+	if res > packetPayloadSizeMax {
+		return fmt.Errorf("%v: %v > %v", packetSizeTooLarge, res, packetPayloadSizeMax)
 	}
 	*p = PacketSize(res)
 	return nil

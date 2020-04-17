@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"sync"
-	"time"
 
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
@@ -15,27 +14,24 @@ import (
 // Ping is used to represent a request to
 // send ICMP "echo requests" to a particular host.
 type Ping struct {
-	TTL                 TimeToLive            // time to live (uint32)
-	PacketSize          PacketSize            // packet size (uint16)
-	Count               Count                 // if set, number of echo response packets sent and received
-	Timeout             Timeout               // if set, time before program exits
-	Flood               Flood                 // flood mode
-	Wait                Wait                  // wait time between sending pings
-	WaitTime            WaitTime              // max round-trip time for outputting response
-	HostName            string                // host name as a string
-	hostAddr            *net.IPAddr           // host as an address
-	isIPv4              bool                  // if the host is IPv4
-	proto               int                   // iana protocol
-	conn                *icmp.PacketConn      // connection for sending/receiving
-	id                  int                   // id for requests/responses
-	requestType         icmp.Type             // ICMP request type
-	replyType           icmp.Type             // ICMP response type
-	waitTimeExceeded    map[int]bool          // response sequences that exceeded waittime (seq -> true)
-	waitTimeExceededMux sync.Mutex            // mutex for waitTimeExceeded map
-	seen                map[int]time.Duration // response sequences seen (seq -> round-trip time)
-	seenMux             sync.Mutex            // mutex for seen map
-	sent                map[int][]byte        // sent sequences (seq -> payload)
-	sentMux             sync.Mutex            // mutex for sent map
+	TTL         TimeToLive          // time to live (uint32)
+	PacketSize  PacketSize          // packet size (uint16)
+	Count       Count               // if set, number of echo response packets sent and received
+	Timeout     Timeout             // if set, time before program exits
+	Flood       Flood               // flood mode
+	Wait        Wait                // wait time between sending pings
+	WaitTime    WaitTime            // max round-trip time for outputting response
+	HostName    string              // host name as a string
+	hostAddr    *net.IPAddr         // host as an address
+	isIPv4      bool                // if the host is IPv4
+	proto       int                 // iana protocol
+	conn        *icmp.PacketConn    // connection for sending/receiving
+	id          int                 // id for requests/responses
+	requestType icmp.Type           // ICMP request type
+	replyType   icmp.Type           // ICMP response type
+	sent        map[int]*icmpPacket // sent sequences (seq -> sent packet)
+	sentMux     sync.Mutex          // mutex for sent map
+	waitGroup   sync.WaitGroup      // wait group to wait for all helper goroutines to finish
 }
 
 // Validate checks if the Ping request is valid,
@@ -96,12 +92,10 @@ func (p *Ping) init() error {
 	// set id based on process id
 	p.id = os.Getpid()
 	// initialize maps and mutexes
-	p.waitTimeExceeded = make(map[int]bool)
-	p.seen = make(map[int]time.Duration)
-	p.sent = make(map[int][]byte)
-	p.waitTimeExceededMux = sync.Mutex{}
-	p.seenMux = sync.Mutex{}
+	p.sent = make(map[int]*icmpPacket)
 	p.sentMux = sync.Mutex{}
+	// create wait group
+	p.waitGroup = sync.WaitGroup{}
 	return nil
 }
 
@@ -118,14 +112,21 @@ func (p *Ping) Start() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize ping: %v", err)
 	}
-	go p.receive()
-	// printing same message as 'ping' command on start
 	fmt.Printf("PING %v (%v): %v data bytes\n", p.HostName, p.hostAddr.String(), p.PacketSize)
-	p.send(0)
-	<-time.After(time.Second)
-	p.send(1)
-	<-time.After(time.Second)
-	p.send(2)
+	errs := make(chan error)
+	done := make(chan bool)
+	p.waitGroup.Add(1)
+	p.waitGroup.Add(1)
+	go p.sender(done, errs)
+	go p.receiver(done, errs)
+	// printing same message as 'ping' command on start
+	// p.send(0)
+	// <-time.After(time.Second)
+	// p.send(1)
+	// <-time.After(time.Second)
+	// p.send(2)
+
+	p.waitGroup.Wait()
 	// errors := make(chan error) // channel for receiving errors
 	// // gracefully kill ping
 	// select {
