@@ -30,9 +30,8 @@ func (p *Ping) sender(done <-chan bool, errors chan<- error) {
 
 // sends an ICMP "echo request" in flood mode to a host for a particular
 // sequence using the Ping request
-// flood mode: send 100 requests/second or as fast as they are received,
-// whichever is more
-func (p *Ping) floodSender(done <-chan bool, errors chan<- error, recv <-chan bool) {
+// flood mode: send 100 requests/second + as fast as they are received
+func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
 	defer p.waitGroup.Done()
 	// keep sending forever unless count is set
 	for i := 0; !p.Count.IsSet || i < int(p.Count.Value); i++ {
@@ -40,28 +39,34 @@ func (p *Ping) floodSender(done <-chan bool, errors chan<- error, recv <-chan bo
 		case <-done:
 			return // stop sending
 		default:
-			endTime := time.Now().Add(time.Second)
-			// send 100 requests
-			for j := 0; j < floodTimesPerSecond && i < int(p.Count.Value); i, j = i+1, j+1 {
+			endTime := time.Now().Add(time.Second) // send 100 req/second + as fast as they are received
+			for j := 0; j < floodTimesPerSecond && (!p.Count.IsSet || i < int(p.Count.Value)); i, j = i+1, j+1 {
 				err := p.send(i)
 				if err != nil {
 					errors <- err
 					return
 				}
 			}
-			for time.Now().Before(endTime) {
-				select {
-				case <-recv: // see if we can receive a packet
-					// send a request for each received packet
+			for time.Now().Before(endTime) && (!p.Count.IsSet || i < int(p.Count.Value)) {
+				var received bool
+				p.floodRecvMux.Lock()
+				if p.floodRecv > 0 {
+					p.floodRecv--
+					received = true
+				}
+				p.floodRecvMux.Unlock()
+				if received {
 					err := p.send(i)
 					if err != nil {
 						errors <- err
 						return
 					}
-				default:
-					// keep looping
+					i++
 				}
 			}
+			p.floodRecvMux.Lock()
+			p.floodRecv = 0
+			p.floodRecvMux.Unlock()
 		}
 	}
 }

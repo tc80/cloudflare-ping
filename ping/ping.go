@@ -15,24 +15,26 @@ import (
 // Ping is used to represent a request to
 // send ICMP "echo requests" to a particular host.
 type Ping struct {
-	TTL         TimeToLive          // time to live (uint32)
-	PacketSize  PacketSize          // packet size (uint16)
-	Count       Count               // if set, number of echo response packets sent and received
-	Timeout     Timeout             // if set, time before program exits
-	Flood       Flood               // flood mode
-	Wait        Wait                // wait time between sending pings
-	WaitTime    WaitTime            // max round-trip time for outputting response
-	HostName    string              // host name as a string
-	hostAddr    *net.IPAddr         // host as an address
-	isIPv4      bool                // if the host is IPv4
-	proto       int                 // iana protocol
-	conn        *icmp.PacketConn    // connection for sending/receiving
-	id          int                 // id for requests/responses
-	requestType icmp.Type           // ICMP request type
-	replyType   icmp.Type           // ICMP response type
-	sent        map[int]*icmpPacket // sent sequences (seq -> sent packet)
-	sentMux     sync.Mutex          // mutex for sent map
-	waitGroup   sync.WaitGroup      // wait group to wait for all helper goroutines to finish
+	TTL          TimeToLive          // time to live (uint32)
+	PacketSize   PacketSize          // packet size (uint16)
+	Count        Count               // if set, number of echo response packets sent and received
+	Timeout      Timeout             // if set, time before program exits
+	Flood        Flood               // flood mode
+	Wait         Wait                // wait time between sending pings
+	WaitTime     WaitTime            // max round-trip time for outputting response
+	HostName     string              // host name as a string
+	hostAddr     *net.IPAddr         // host as an address
+	isIPv4       bool                // if the host is IPv4
+	proto        int                 // iana protocol
+	conn         *icmp.PacketConn    // connection for sending/receiving
+	id           int                 // id for requests/responses
+	requestType  icmp.Type           // ICMP request type
+	replyType    icmp.Type           // ICMP response type
+	sent         map[int]*icmpPacket // sent sequences (seq -> sent packet)
+	sentMux      sync.Mutex          // mutex for sent map
+	floodRecv    int                 // how many packets received in the last second
+	floodRecvMux sync.Mutex          // mutex for flood recv
+	waitGroup    sync.WaitGroup      // wait group to wait for all helper goroutines to finish
 }
 
 // Validate checks if the Ping request is valid,
@@ -94,6 +96,7 @@ func (p *Ping) init() error {
 	// initialize maps and mutexes
 	p.sent = make(map[int]*icmpPacket)
 	p.sentMux = sync.Mutex{}
+	p.floodRecvMux = sync.Mutex{}
 	// create wait group
 	p.waitGroup = sync.WaitGroup{}
 	return nil
@@ -124,24 +127,20 @@ func (p *Ping) Start() error {
 			timeout <- true               // notify timeout
 		}()
 	}
-	// make channels for done, errors, flood
+	// make channels for done, errors
 	// done will notify threads to clean up and stop
 	// errors will be used to pass errors from threads
-	// flood will be used to notify the sender that a package
-	// is received if flood mode is sets
 	done := make(chan bool)
 	errors := make(chan error)
-	flood := make(chan bool)
 	defer close(errors)
 	defer close(done)
-	defer close(flood)
 	p.waitGroup.Add(1)
 	// start receiving
-	go p.receiver(done, errors, flood)
+	go p.receiver(done, errors)
 	p.waitGroup.Add(1)
 	// start sending
 	if bool(p.Flood) {
-		go p.floodSender(done, errors, flood)
+		go p.floodSender(done, errors)
 	} else {
 		go p.sender(done, errors)
 	}

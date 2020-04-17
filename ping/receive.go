@@ -16,7 +16,7 @@ var (
 
 // sends an ICMP "echo request" to a host for a particular
 // sequence using the Ping request
-func (p *Ping) receiver(done <-chan bool, fatal chan<- error, flood chan<- bool) {
+func (p *Ping) receiver(done <-chan bool, fatal chan<- error) {
 	defer p.waitGroup.Done()
 	for {
 		select {
@@ -38,7 +38,12 @@ func (p *Ping) receiver(done <-chan bool, fatal chan<- error, flood chan<- bool)
 			p.waitGroup.Add(1)
 			go p.handleReply(buffer[:n], recvTime)
 			if bool(p.Flood) {
-				go func() { flood <- true }() // send recv to flood
+				// update count of recv packages since last reset
+				go func() {
+					p.floodRecvMux.Lock()
+					defer p.floodRecvMux.Unlock()
+					p.floodRecv++
+				}()
 			}
 		}
 	}
@@ -107,7 +112,8 @@ func (p *Ping) handleReply(reply []byte, recvTime time.Time) {
 		}
 		p.handleEchoReply(reply, recvTime, header, body)
 	default:
-		return // unknown or unhandled type, so ignoring
+		panic(message)
+		//return // unknown or unhandled type, so ignoring
 	}
 }
 

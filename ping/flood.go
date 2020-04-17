@@ -7,9 +7,14 @@ import (
 
 const (
 	// Flood constants based off the man page for 'ping'.
+	// Made implementation easier by changing the flood mode from
+	// the max of 100 requests/second or as fast as the requests are received
+	// to simply 100 requests/second + as fast as the requests are received.
+	// With respect to 'ping', the output of flood will not be suppressed
+	// with periods/backspaces. It will be consistent with the other options.
 	floodFlag = "f"
-	floodHelp = "Set the mode to flood. In flood mode, packets are output as fast as\n" +
-		"they are received or 100 times per second, whichever is more.\n" +
+	floodHelp = "Set the mode to flood. In flood mode, packets are output\n" +
+		"100 times per second plus as fast as they are received.\n" +
 		"If unset, the program will behave normally. This flag (-f)\n" +
 		"is incompatible with wait (-i)."
 	floodTimesPerSecond = 100
