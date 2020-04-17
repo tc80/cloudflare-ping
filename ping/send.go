@@ -7,8 +7,7 @@ import (
 	"golang.org/x/net/icmp"
 )
 
-// sends an ICMP "echo request" to a host for a particular
-// sequence using the Ping request
+// manages sending a number of ICMP echo requests
 func (p *Ping) sender(done <-chan bool, errors chan<- error) {
 	defer p.waitGroup.Done()
 	// keep sending forever unless count is set
@@ -23,7 +22,7 @@ func (p *Ping) sender(done <-chan bool, errors chan<- error) {
 				errors <- err
 				return
 			}
-			<-time.After(time.Duration(p.Wait.Value))
+			<-time.After(time.Duration(p.Wait.Value)) // wait after sending
 		}
 	}
 }
@@ -40,6 +39,7 @@ func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
 			return // stop sending
 		default:
 			endTime := time.Now().Add(time.Second) // send 100 req/second + as fast as they are received
+			// send 100 requests
 			for j := 0; j < floodTimesPerSecond && (!p.Count.IsSet || i < int(p.Count.Value)); i, j = i+1, j+1 {
 				err := p.send(i)
 				if err != nil {
@@ -47,8 +47,10 @@ func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
 					return
 				}
 			}
+			// send as many requests as received packets until time is up
 			for time.Now().Before(endTime) && (!p.Count.IsSet || i < int(p.Count.Value)) {
 				var received bool
+				// check if a packet has been received
 				p.floodRecvMux.Lock()
 				if p.floodRecv > 0 {
 					p.floodRecv--
@@ -56,6 +58,7 @@ func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
 				}
 				p.floodRecvMux.Unlock()
 				if received {
+					// packet received, so send a request
 					err := p.send(i)
 					if err != nil {
 						errors <- err
@@ -64,6 +67,7 @@ func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
 					i++
 				}
 			}
+			// reset number of received packets to 0
 			p.floodRecvMux.Lock()
 			p.floodRecv = 0
 			p.floodRecvMux.Unlock()
@@ -71,6 +75,8 @@ func (p *Ping) floodSender(done <-chan bool, errors chan<- error) {
 	}
 }
 
+// sends an ICMP "echo request" to a host for a particular
+// sequence using the Ping request
 func (p *Ping) send(seq int) error {
 	// create echo request
 	payload := p.PacketSize.GeneratePayload()

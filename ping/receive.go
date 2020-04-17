@@ -112,8 +112,7 @@ func (p *Ping) handleReply(reply []byte, recvTime time.Time) {
 		}
 		p.handleEchoReply(reply, recvTime, header, body)
 	default:
-		panic(message)
-		//return // unknown or unhandled type, so ignoring
+		return // unknown or unhandled type, so ignoring
 	}
 }
 

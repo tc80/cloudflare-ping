@@ -36,7 +36,7 @@ To run the program once built:
 
 `sudo ./main/ping [-W waittime] [-c count] [-f] [-i wait] [-m ttl] [-s packetsize] [-t timeout] host`
 
-The usage will be printed in the case of any errors. Note that `host` is any valid hostname or IPv4/IPv6 address.
+The usage will be printed in the case of any errors. For instance, the flags `-i` and `-f` are mutually exclusive. Note that `host` is any valid hostname or IPv4/IPv6 address.
 
 Make sure that this repository is located in your computer's `GOPATH` in the top-level `src` directory. Otherwise, you may need to modify the import statements for the program to build. 
 
@@ -52,7 +52,7 @@ Finally, when testing with IPv6 addresses, make sure IPv6 is enabled on your rou
 
 ## Tests
 
-There are several tests/examples of running the application located in the folder `test/`. 
+There are several tests/examples of running the application in the `Makefile`. For example: `make run ping-google-dns-ipv6` pings Google's IPv6 DNS 5 times and outputs the statistics. Remember to build before running.
 
 
 
