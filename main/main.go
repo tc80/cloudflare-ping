@@ -1,7 +1,7 @@
 package main
 
 import (
-	"cloudflare-ping/src/ping"
+	"cloudflare-ping/ping"
 	"flag"
 	"fmt"
 	"log"

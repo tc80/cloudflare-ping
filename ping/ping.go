@@ -42,7 +42,7 @@ func (p *Ping) Validate() error {
 	if p.Count.IsSet && p.Count.Value == 0 {
 		return errCountInvalid
 	}
-	if _, err := ResolveHost(p.HostName); err != nil {
+	if _, _, err := ResolveHost(p.HostName); err != nil {
 		return err
 	}
 	if p.Wait.IsSet && bool(p.Flood) {
@@ -55,13 +55,12 @@ func (p *Ping) Validate() error {
 // for a packet connection and request/reply ICMP types
 func (p *Ping) init() error {
 	// resolve host
-	addr, err := ResolveHost(p.HostName)
+	addr, IPv4, err := ResolveHost(p.HostName)
 	if err != nil {
 		panic(err)
 	}
 	p.hostAddr = addr
-	// determine if IPv4 or IPv6
-	p.isIPv4 = isIPv4(p.hostAddr)
+	p.isIPv4 = IPv4
 	// initialize packet connection, req/resp types
 	var icmpNetwork, bindAddress string
 	if p.isIPv4 {

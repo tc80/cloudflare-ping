@@ -28,11 +28,13 @@ var (
 
 // represents a sent ICMP packet
 type icmpPacket struct {
-	sendTime         time.Time // time sent
-	receiveTime      time.Time // time received
-	received         bool      // if the packet has been received
-	waitTimeExceeded bool      // if the packet exceeded its wait time
-	payload          []byte    // payload
+	sendTime         time.Time     // time sent
+	receiveTime      time.Time     // time received
+	roundtripTime    time.Duration // rtt time
+	receivedTTL      int           // ttl when received
+	received         bool          // if the packet has been received
+	waitTimeExceeded bool          // if the packet exceeded its wait time
+	payload          []byte        // payload
 }
 
 // PacketSize is a wrapper around an unsigned integer
