@@ -11,7 +11,7 @@ import (
 const (
 	hostArgIndex = 0
 	argCount     = 1
-	usageExample = "sudo go run main/main.go [-W waittime] [-c count] [-f] [-i wait] [-m ttl] [-s packetsize] [-t timeout] host"
+	usageExample = "sudo ./main/ping [-W waittime] [-c count] [-f] [-i wait] [-m ttl] [-s packetsize] [-t timeout] host"
 )
 
 // flagArg interface allows us to process the command-line
@@ -44,10 +44,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("ping failure: %v\n", err)
 	}
-	fmt.Println("Ping finished successfully.")
-	// maybe pass back some stats to print out?
-	// shutdown hook for ping
-
 }
 
 // Parses the command-line arguments and flags passed
